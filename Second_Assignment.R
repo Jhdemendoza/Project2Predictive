@@ -3,6 +3,8 @@ setwd("/Users/Jaime/Desktop/Master/PredictiveModeling/Project2/")
 
 
 
+##################
+>>>>>>> 01b96fcfe96b7fadd0becf6e1508710965884165
 admision = read.csv("Admission_Predict.csv",header = TRUE)
 summary(admision)
 # Get rid of serial number since it doesn't really mean anything

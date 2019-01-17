@@ -1,6 +1,7 @@
 ################################SET WORKING DIR###########################
 setwd("/Users/Jaime/Desktop/Master/PredictiveModeling/Project2/")
 
+
 ################################IMPORTING LIBRARIES#######################
 library("psych")
 library("MASS")

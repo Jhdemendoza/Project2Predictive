@@ -65,24 +65,27 @@ plot(density(TOEFL))
 ## according to how good they are)
 summary(UniRating)
 boxplot(UniRating)
+#admision$UniRating <- as.factor(UniRating)
 # Does'nt make sense in qualitative variables as much as in continuous.
 plot(ecdf(UniRating))
 plot(density(UniRating))
 ## No outliers for UniRating and as seen in the first plot it follows a Normal distribution
 
-## 4. Statement of Purpose (out of 5) SOP Quantitative variable that measures the goodnes of
+## 4. Statement of Purpose (out of 5 every 0.5) SOP Quantitative variable that measures the goodnes of
 ## the statement of purpose
 summary(SOP)
 boxplot(SOP)
+#admision$SOP <- as.factor(SOP)
 # Does'nt make sense in qualitative variables as much as in continuous.
 plot(ecdf(SOP))
 plot(density(SOP))
 ## No outliers for SOP and as seen in the first plot it follows a Normal distribution
 
-## 5. Letter of Recommendation Strength (out of 5) LOR Quantitative variable (Very similar to 
+## 5. Letter of Recommendation Strength (out of 5 every 0.5) LOR Quantitative variable (Very similar to 
 ## the previous one but concerning letters of recommendation)
 summary(LOR)
 boxplot(LOR)
+#admision$LOR <- as.factor(LOR)
 # Does'nt make sense in qualitative variables as much as in continuous.
 plot(ecdf(LOR))
 plot(density(LOR))
@@ -109,7 +112,7 @@ plot(density(Chance))
 ## This variable, as is CGPA, is a little bit skewed, but it could be assumed to follow
 ## a Normal distribution. Also, since this is going to be our target variable, we will
 ## make it a binary one by using a cutoff.
-
+attach(admision)
 
 
 ################################LINEAR REGRESSION#########################
@@ -178,7 +181,7 @@ diff_model<-function(response,predictor,name="",data=admision,gr=FALSE){
 
 diff_model(Chance,GRE,"GRE", gr=TRUE)
 diff_model(Chance,TOEFL,"TOEFL", gr=TRUE)
-diff_model(Chance,UniRating,"UniRating", gr=TRUE)
+diff_model(Chance,as.numeric(UniRating),"UniRating", gr=TRUE)
 diff_model(Chance,SOP,"SOP", gr=TRUE)
 diff_model(Chance,LOR,"LOR", gr=TRUE)
 diff_model(Chance,CGPA,"CGPA", gr=TRUE)
@@ -189,10 +192,11 @@ diff_model(Chance,CGPA,"CGPA", gr=TRUE)
 # We could also see what happens when using polynomial predictors
 
 ##diff_model(Chance,Research+GRE,"aa")
-for (i in 1:(length(admision)-1)) {
-  for (j in 1:(length(admision)-1)) {
+indexes <- c(1,2,4,5,6)
+for (i in 1:(length(indexes))) {
+  for (j in 1:(length(indexes))) {
     if (j > i) {
-      diff_model(Chance,admision[i]+admision[j], paste(names(admision)[i],"+",names(admision)[j]))
+        diff_model(Chance,admision[indexes[i]]+admision[indexes[j]], paste(names(admision)[indexes[i]],"+",names(admision)[indexes[j]]))
     }
   }
 }
@@ -228,6 +232,27 @@ print(paste("True negative rate:",tnr))
 mod_int <- stepAIC(glm(Chance > cutoff ~ .^2, data=admision, family="binomial"), k = log(length(Chance)))
 summary(mod_int)
 ## The interactions model just returns the same as the model that doesn't allow for interactions
+
+summary(mod)
+confint.default(mod, level=0.95)
+exp(confint.default(mod, level=0.95))
+## From the confidence intervals at alpha = 0.05 we can see that neither the intercept nor the
+## research are significant at that interval.
+## The interpretation of the intercept not being significant is that when UniRating = 0, CGPA = 0
+## and Research1 = 0, the probability of being accepted is not significantlly larger than
+## not being accepted.
+## UniRating and CGPA are significant, this means that an increase in UniRating of one unit, makes
+## the odds of getting accepted increase by a factor between 1.178 and 12.519
+## For CGPA, which is more signiticant than UniRating, an increase in one unit of CGPA makes the odds
+## increase by a factor between 7167 and 1086185000.
+
+## In principle the UniRating should be negatively correlated with the probability of being accepted
+## because it is harder to get into a better University. In this case, the UniRating is correlated
+## positively. This is probably due to the fact, that people normally has an inctuition of whether 
+## they are going to get accepted or not, and people with lower GPAs doesn't try to go to UniRating
+## Maybe for this reason, we should get rid of this variable, or make a more in depth analysis ->
+## -> Make a different model for each rating in order to see how it varies, or 3 models (UniRating = 1&2,
+## UniRating = 3&4 and UniRating = 5)
 
 ## Interpretations for the model (regarding the odds:
 # Taking into account that we are currently on January

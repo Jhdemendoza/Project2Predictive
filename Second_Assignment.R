@@ -1,5 +1,6 @@
 ################################SET WORKING DIR###########################
-setwd("/Users/Jaime/Desktop/Master/PredictiveModeling/Project2/")
+#setwd("/Users/Jaime/Desktop/Master/PredictiveModeling/Project2/")
+setwd("C:/Users/alvaro/Documents/GitHub/Predictive2/Project2Predictive")
 
 
 ################################IMPORTING LIBRARIES#######################
@@ -260,11 +261,37 @@ exp(confint.default(mod, level=0.95))
 # which one should be the best option - check which are the higher B's
 
 
+#################################ANALYSING DEVIANCE##############################
+mod$deviance
+mod$null.deviance
+R_squared=1-(mod$deviance/mod$null.deviance)
+#it is a proportion of how good the fit is compared to the worst
+
+mod$anova
+#From this result we can realize that model performs better reducing the number of predictors
 
 
+#Deviance measures the deviance of the fitted generalized 
+#linear model with respect to a perfect model for 
+#E[YjX1 = x1, . . . , Xp = xp]. This perfect model, 
+#known as the saturated model
+#What we need is to reduce the deviance
+#The deviance is a generalization of the Residual Sum of
+#Squares (RSS) of the linear model. The generalization is
+#driven by the likelihood and its equivalence with the RSS
+#in the linear model.
 
+############################MODEL DIAGNOSIS########################
+plot(mod,1)
+#From the graph above we can verify that there is no trend
+#on the residuals vs the fitted values, which lead us 
+#to conclude that there is linearity between the transform
+#expectation of Y and the predictors
 
-
+plot(mod,2)
+#As expected, normality in the deviance residuals is met
+#as the normal qq-plot fits the line 
+#(talking into account that some difference is expected in the tails)
 
 
 
@@ -297,26 +324,6 @@ diff_model(Chance,UniRating,"UniRating")
 diff_model(Chance,SOP,"SOP")
 diff_model(Chance,LOR,"LOR")
 diff_model(Chance,CGPA,"CGPA")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ###################Para hacer pruebas#####################
 predictor_scaled=scale(GRE)

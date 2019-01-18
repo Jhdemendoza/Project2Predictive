@@ -153,8 +153,8 @@ summary(Chance > cutoff)
 #### Let's start by looking at Chance vs. each one of the variables
 diff_model<-function(response,predictor,name="",data=admision,gr=FALSE){
   predictor_scaled=scale(predictor)
+  mod <- glm(response>cutoff~predictor_scaled,family = "binomial",data=admision)
   if (gr == TRUE) {
-    mod <- glm(response>cutoff~predictor_scaled,family = "binomial",data=admision)
     x_plot <- seq(-3,3,by=0.1)
     temp <- mod$coefficients[1]+mod$coefficients[2]*x_plot
     x_plot <- x_plot*sd(predictor)+mean(predictor)
@@ -182,24 +182,20 @@ diff_model(Chance,UniRating,"UniRating", gr=TRUE)
 diff_model(Chance,SOP,"SOP", gr=TRUE)
 diff_model(Chance,LOR,"LOR", gr=TRUE)
 diff_model(Chance,CGPA,"CGPA", gr=TRUE)
+#diff_model(Chance,Research,"Research", gr=TRUE)
 # As we can see we can be more certain that the classifier has returned a correct answer
 # when it says that we will not me admitted because the TNR is bigger than the TPR.
 # There variables have the produce best TPR's are CGPA, GRE and TOEFL.
-##diff_model(Chance,Research+GRE,"aa")
-##for (i in 1:nrow(admision)) {
-##  for (j in 1:nrow(admision)) {
-##    if (j > i) {
-##      diff_model(Chance,admision[i]+admision[j], paste(names(admision)[i],"+",names(admision)[j]))
-##    }
-##  }
-##}
-##diff_model(Chance,TOEFL,"GRE+TOEFL")
-##diff_model(Chance,GRE+UniRating,"GRE+UniRating")
+# We could also see what happens when using polynomial predictors
 
-###############################ALVARO#############################
-####### ******* He intentado hacer automaticamente todas las combinaciones de dos variables
-####### pero falla por el escalado de los datos, lo que pasas es que si lo quito no me salen
-####### las graficas, echale un ojo a ver si podemos quitar eso porfa
+##diff_model(Chance,Research+GRE,"aa")
+for (i in 1:(length(admision)-1)) {
+  for (j in 1:(length(admision)-1)) {
+    if (j > i) {
+      diff_model(Chance,admision[i]+admision[j], paste(names(admision)[i],"+",names(admision)[j]))
+    }
+  }
+}
 
 
 ## BEST MODEL ACCORDING TO BIC
@@ -231,11 +227,16 @@ print(paste("True negative rate:",tnr))
 ## Allowing for interactions returns the same result -> The important predictors are GRE, LOR and CGPA
 mod_int <- stepAIC(glm(Chance > cutoff ~ .^2, data=admision, family="binomial"), k = log(length(Chance)))
 summary(mod_int)
+## The interactions model just returns the same as the model that doesn't allow for interactions
 
 ## Interpretations for the model (regarding the odds:
-#Taking into account that we are currently on January
-#and we have enough time to prepare well just one exam, 
-#which one should be the best option - check which are the higher B's
+# Taking into account that we are currently on January
+# and we have enough time to prepare well just one exam, 
+# which one should be the best option - check which are the higher B's
+
+
+
+
 
 
 

@@ -320,10 +320,11 @@ plot(density(mod$residuals[mod$residuals>-10]+1))
 plot(mod$residuals[mod$residuals>-10],type = "line")
 Chance[abs(mod$residuals)>1.2]
 #Independe can be assure. Apparently, there exist a kind of memmory
-#from onw point to another. This is not a problem in this case, 
+#from one point to the following. This is not a problem in this case, 
 #as we are applying a Binomial distribution so this result is expected
 #Higher values of residuals correspond to the points closest
-#to the boundary set by the cutoff
+#to the boundary set by the cutoff, which make sense cause are 
+#harder to predict
 
 {min(mod$residuals)
   mod$residuals[32:35]
@@ -348,15 +349,60 @@ pairs(admision[,c(3,6,7)])
 #Not good idea to plot results this way
 
 
-############################Shrinkage & Lasso##################
+############################Ridge & Lasso##################
+#Básicamente, si aumento la lambda penalizo la deviance del modelo. 
+#El mejor modelo para ambos casos lo obtenemos cuando lambda = 0
+#Lo que respalda lo anterior.
+#Con lo que, lo mejor sería plantear distintas gráficas, viendo como
+#afectan las lambdas al modelo y así llegar a un punto de equlibrio
+#con lasso seguramente, donde encontremos que nos hemos
+#quitado predictors (simplifico el modelo) pero aún así
+#tenemos un buen resultado en deviance!
+
 y<-admision$Chance>0.9
-x<-model.matrix(Chance~.,data=admision)[,-c(1)]
+x<-model.matrix(Chance>0.9~.,data=admision)[,-c(1)]
 
 ridgeMod <- glmnet(x = x, y = y, alpha = 0, family = "binomial")
+max_deviance_ridge=ridgeMod$nulldev*(1-ridgeMod$dev.ratio)
+
+plot(max_deviance_ridge)
+plot(ridgeMod$lambda)
+ridgeMod$beta
+deviance=ridgeMod$nulldev*ridgeMod$dev.ratio
+plot(deviance)
+max(deviance)
+plot(ridgeMod$dev.ratio)
+plot(ridgeMod$lambda)
+#Deviance obtained from this model is 83, which is lower than in the case 
+#of using BIC to reduce the estimators.
+#So here is clear that using less predictors (after stepAIC)
+#improves our model!!
+plot(x=log(ridgeMod$lambda),y=ridgeMod$dev.ratio)
+#About the R^2 for the model, as we increase the Lamba, it decreases to 0. 
+#Best R^2 is achieved if lambda~0
+  
 lassoMod <- glmnet(x = x, y = y, alpha = 1, family = "binomial")
+deviance_lasso=lassoMod$nulldev*(1-lassoMod$dev.ratio)
+plot(deviance_lasso)
+plot((lassoMod$lambda))
+
+plot(max_deviance_lasso,x=log(lassoMod$lambda))
+#Lasso performs better than Ridge, obtaining it´s best deviance 45.44 
+max_deviance_lasso=lassoMod$nulldev*(1-lassoMod$dev.ratio)
+plot(max_deviance_lasso,x=log(lassoMod$lambda))
+points(x=log(lassoMod$lambda[lassoMod$dev.ratio==max(lassoMod$dev.ratio)]),y=max_deviance_lasso)
+max_deviance_lasso
+glm(Chance>)
 
 plot(ridgeMod,label=TRUE,xvar = "lambda")
+#As expected, ridge model does not make any B =0
+plot(y=ridgeMod$dev.ratio,x=log(ridgeMod$lambda))
+#Deviance explained by the model decreases as we 
+#penalize the value of the B's - which make sense cause
+#if all b's are close to 0 we are predicting using only B0-a constant - i.e. null deviance!
+
 plot(lassoMod,label = TRUE, xvar = "lambda")
+plot(y=lassoMod$dev.ratio,x=log(lassoMod$lambda))
 
 plot(ridgeMod, label = TRUE, xvar = "dev")
 plot(lassoMod, label = TRUE, xvar = "dev")

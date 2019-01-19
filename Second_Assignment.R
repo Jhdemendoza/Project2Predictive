@@ -265,6 +265,7 @@ exp(confint.default(mod, level=0.95))
 mod$deviance
 mod$null.deviance
 R_squared=1-(mod$deviance/mod$null.deviance)
+R_squared
 #it is a proportion of how good the fit is compared to the worst
 
 mod$anova
@@ -282,21 +283,26 @@ mod$anova
 #in the linear model.
 
 ############################MODEL DIAGNOSIS########################
+#Checking normality
 plot(mod,1)
 #From the graph above we can verify that there is no trend
 #on the residuals vs the fitted values, which lead us 
 #to conclude that there is linearity between the transform
 #expectation of Y and the predictors
 
+#Checking Distribution
 plot(mod,2)
 #As expected, normality in the deviance residuals is met
 #as the normal qq-plot fits the line 
 #(talking into account that some difference is expected in the tails)
 
-
-
-
-
+#Checking Independece 
+plot(mod$residuals,type = "line")
+min(mod$residuals)
+head(admision[32:35,])
+temp_1=predict(mod,admision[32:35,])
+mod$residuals[32:35]
+logistic((temp_1))
 ##############################Logistic Regression By attribute########################
 
 diff_model<-function(response,predictor,name="",data=admision){

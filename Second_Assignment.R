@@ -202,7 +202,7 @@ for (i in 1:(length(indexes))) {
 }
 
 
-## BEST MODEL ACCORDING TO BIC
+###################################BEST MODEL ACCORDING TO BIC######################################
 mod <- stepAIC(glm(Chance > cutoff ~ ., data = admision, family = "binomial"), k = log(length(Chance)))
 summary(mod)
 pairs.panels(admision[,c(3,6,7,8)], 
@@ -286,26 +286,51 @@ mod$anova
 
 ############################MODEL DIAGNOSIS########################
 #Checking normality
+idx=mod$residuals>-10
+
+summary(Chance==0.9)
+mod$residuals[34]
+mod$fitted.values[34]
+Chance[34]
+plot(mod$residuals)
+#I do not know why there is an outlier of -147...
+
 plot(mod,1)
 #From the graph above we can verify that there is no trend
 #on the residuals vs the fitted values, which lead us 
 #to conclude that there is linearity between the transform
 #expectation of Y and the predictors
+#Here we have to be careful cause with the term
+#residuals, we are refering to the deviance residuals which 
+#are the generalization of the residuals from a linear model.
 
 #Checking Distribution
 plot(mod,2)
 #As expected, normality in the deviance residuals is met
 #as the normal qq-plot fits the line 
 #(talking into account that some difference is expected in the tails)
+#Std.deviance vs theoretical Quantile fits an horizontal line due to for most of the points,
+#Standard deviance residual is 0. As we are trying to predict a binomial
+#variance, this result make sense. This also lead us to conclude that
+#most of the residual has to follow a very thick hood
+plot(density(mod$residuals[mod$residuals>-10]+1))
+
 
 #Checking Independece 
-plot(mod$residuals,type = "line")
-min(mod$residuals)
-mod$residuals[32:35]
-head(admision[32:35,])
-temp_1=predict(mod,admision[32:35,])
-temp_1
-logistic(temp_1)
+plot(mod$residuals[mod$residuals>-10],type = "line")
+Chance[abs(mod$residuals)>1.2]
+#Independe can be assure. Apparently, there exist a kind of memmory
+#from onw point to another. This is not a problem in this case, 
+#as we are applying a Binomial distribution so this result is expected
+#Higher values of residuals correspond to the points closest
+#to the boundary set by the cutoff
+
+{min(mod$residuals)
+  mod$residuals[32:35]
+  head(admision[32:35,])
+  temp_1=predict(mod,admision[32:35,])
+  temp_1
+  logistic(temp_1)}
 #Here we can observe a kind of residual-outlier for obervation 34
 #After checking, we can verify that this point does not affect 
 #to the assumption of indepence, so we can confirm that assumption 

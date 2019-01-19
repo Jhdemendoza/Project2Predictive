@@ -11,8 +11,7 @@ library("pracma")
 library("tidyverse")
 library("car")
 library("glmnet")
-
-
+library("ISLR")
 
 ##################################READ DATA##########################
 admision = read.csv("Admission_Predict.csv",header = TRUE)
@@ -322,6 +321,33 @@ names(mod$coefficients)
 names(admision)
 pairs(admision[,c(3,6,7)])
 #Not good idea to plot results this way
+
+
+############################Shrinkage & Lasso##################
+y<-admision$Chance>0.9
+x<-model.matrix(Chance~.,data=admision)[,-c(1)]
+
+ridgeMod <- glmnet(x = x, y = y, alpha = 0, family = "binomial")
+lassoMod <- glmnet(x = x, y = y, alpha = 1, family = "binomial")
+
+plot(ridgeMod,label=TRUE,xvar = "lambda")
+plot(lassoMod,label = TRUE, xvar = "lambda")
+
+plot(ridgeMod, label = TRUE, xvar = "dev")
+plot(lassoMod, label = TRUE, xvar = "dev")
+
+set.seed(12345)
+ncvLasso <- cv.glmnet(x = x, y = y, alpha = 1, nfolds = 10, family = "binomial")
+plot(ncvLasso)
+kcvLasso$lambda.min
+
+set.seed(12345)
+ncvRidge <- cv.glmnet(x = x, y = y, alpha = 0, nfolds = 10, family = "binomial")
+plot(ncvRidge)
+ncvRidge$lambda.min
+
+predict(ncvLasso, type = "coefficients", s = ncvLasso$lambda.1se)
+predict(ncvRidge, type = "coefficients", s = ncvRidge$lambda.1se)
 
 ##############################Logistic Regression By attribute########################
 

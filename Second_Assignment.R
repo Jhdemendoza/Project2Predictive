@@ -269,7 +269,10 @@ R_squared
 #it is a proportion of how good the fit is compared to the worst
 
 mod$anova
-#From this result we can realize that model performs better reducing the number of predictors
+#From this result we can realize that model performs 
+#better reducing the number of predictors from the
+#model with all predictors included, reducing 
+#deviance and AIC at the same time
 
 
 #Deviance measures the deviance of the fitted generalized 
@@ -299,10 +302,27 @@ plot(mod,2)
 #Checking Independece 
 plot(mod$residuals,type = "line")
 min(mod$residuals)
+mod$residuals[32:35]
 head(admision[32:35,])
 temp_1=predict(mod,admision[32:35,])
-mod$residuals[32:35]
-logistic((temp_1))
+temp_1
+logistic(temp_1)
+#Here we can observe a kind of residual-outlier for obervation 34
+#After checking, we can verify that this point does not affect 
+#to the assumption of indepence, so we can confirm that assumption 
+
+
+#Checking multicollinearity
+car::vif(mod)
+#VIF looks into linear relation between predictors. 
+#From this result we can be sure that there is no multicollinearity
+#between predictors. 
+
+names(mod$coefficients)
+names(admision)
+pairs(admision[,c(3,6,7)])
+#Not good idea to plot results this way
+
 ##############################Logistic Regression By attribute########################
 
 diff_model<-function(response,predictor,name="",data=admision){

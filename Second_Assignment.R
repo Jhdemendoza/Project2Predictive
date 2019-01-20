@@ -476,17 +476,19 @@ for (i in steps){
 }
 lassoMod <- glmnet(x = x, y = y, alpha = 1, family = "binomial")
 plot(lassoMod,label = TRUE, xvar = "lambda")
-
-log(lassoMod$lambda[26])
 points(ylab="number of predictors",x=log(lassoMod$lambda),y=sapply(1:ncol(lassoMod$beta),function(x) sum(lassoMod$beta[,x]!=0)),type="line",col="blue")
-idx=c(1,8,10,25,64,81)
+idx=c(1,8,10,25,64,81,length(lassoMod$lambda))
 idx
 abline(v=log(lassoMod$lambda[idx]))
 lassoMod_steps <- glmnet(lambda = lassoMod$lambda[idx],x = x, y = y, alpha = 1, family = "binomial")
 lassoMod_steps_deviance=(1-lassoMod_steps$dev.ratio)*lassoMod$nulldev
 lassoMod_steps_deviance
-c(7:0)
-plot(ylab = "deviance",xlab="number of predictors",x=c(0:5),y=lassoMod_steps_deviance,type="line")
+plot(ylab = "log deviance",xlab="number of predictors",x=c(1:7),y=log(lassoMod_steps_deviance),type="line")
+text(x = 1:7,y = log(lassoMod_steps_deviance),labels = round(lassoMod_steps_deviance,0),pos=c(4,3,3,4,3,3,3))
+#From this result we can see that a model with just 
+#5 predictors will have the same deviance as another
+#applying all the predictors, so there are some variables
+#that can be removed using this approach
 ########################## 
 plot(lassoMod,label = TRUE, xvar = "lambda")
 plot(y=lassoMod$dev.ratio,x=log(lassoMod$lambda))

@@ -395,7 +395,6 @@ for (i in steps){
 }
 #Here we make some plots to explain the model
 {
-dev.off()
 par(mfrow=c(1,4))
 plot(r_squared,x=steps,type="line",main="R Squared")
 plot(main="Deviance Analysis",x=steps,y=deviance,xlab = "Lambda",ylab = "Deviance",type="line")
@@ -428,29 +427,67 @@ abline(v=log(0.3))
 #(recall that variables are normalize)
 #if every variable has the same significance
 
-#LASSO ESTA TARDE :)
-
-
-lassoMod <- glmnet(x = x, y = y, alpha = 1, family = "binomial")
-deviance_lasso=lassoMod$nulldev*(1-lassoMod$dev.ratio)
-plot(deviance_lasso)
-plot((lassoMod$lambda))
-
-plot(max_deviance_lasso,x=log(lassoMod$lambda))
-#Lasso performs better than Ridge, obtaining it´s best deviance 45.44 
-max_deviance_lasso=lassoMod$nulldev*(1-lassoMod$dev.ratio)
-plot(max_deviance_lasso,x=log(lassoMod$lambda))
-points(x=log(lassoMod$lambda[lassoMod$dev.ratio==max(lassoMod$dev.ratio)]),y=max_deviance_lasso)
-max_deviance_lasso
-glm(Chance>)
-
-plot(ridgeMod,label=TRUE,xvar = "lambda")
-#As expected, ridge model does not make any B =0
 plot(y=ridgeMod$dev.ratio,x=log(ridgeMod$lambda))
 #Deviance explained by the model decreases as we 
 #penalize the value of the B's - which make sense cause
 #if all b's are close to 0 we are predicting using only B0-a constant - i.e. null deviance!
 
+###################LASSO####################
+#Initializing some arrays
+{
+  steps=seq(from=0,to = 0.1,by = 0.01)
+  accuracy=rep(0,length(steps))
+  tnr=rep(0,length(steps))
+  tpr=rep(0,length(steps))
+  fpr=rep(0,length(steps))
+  deviance=rep(0,length(steps))
+  r_squared=rep(0,length(steps))
+  j=1
+}
+#Iterating over lambda - 
+#Lambda > 0.1 evaluates everything as negative
+for (i in steps){
+  lassoMod <- glmnet(lambda = i,x = x, y = y, alpha = 1, family = "binomial")
+  deviance[j]=(1-lassoMod$dev.ratio)*lassoMod$nulldev
+  r_squared[j]=lassoMod$dev.ratio
+  val_pre=logistic(x=predict(lassoMod,newx = x))
+  tab <- table(Chance>cutoff,val_pre>0.5)
+  print(tab)
+  accuracy[j]<- sum(diag(tab)) / sum(tab)
+  tnr[j] <- tab[1]/sum(tab[,1])
+  tpr[j] <- tab[4]/sum(tab[2,])
+  fpr[j] <- tab[2]/sum(tab[1,])
+  print(paste("Lambda:",i))
+  print(paste("Accuracy:",accuracy[j]))
+  print(paste("True positive rate:",tpr[j]))
+  print(paste("True negative rate:",tnr[j]))
+  print(paste("False positive rate:",fpr[j]))
+  j=j+1
+}
+#Here we make some plots to explain the model
+{
+  par(mfrow=c(1,4))
+  plot(r_squared,x=steps,type="line",main="R Squared")
+  plot(main="Deviance Analysis",x=steps,y=deviance,xlab = "Lambda",ylab = "Deviance",type="line")
+  plot(main="Accuracy of the predictions",accuracy,x=steps,xlab = "lambda",type="line",ylim = c(0.7,1),xlim = c(0,.3))
+  #points(y=tnr,x=steps,type="line",col="red")
+  plot(main="ROC Curve",y=tpr,x=fpr,xlim = c(0,0.15),ylim = c(0,1),type="line")
+  
+}
+lassoMod <- glmnet(x = x, y = y, alpha = 1, family = "binomial")
+plot(lassoMod,label = TRUE, xvar = "lambda")
+
+log(lassoMod$lambda[26])
+points(ylab="number of predictors",x=log(lassoMod$lambda),y=sapply(1:ncol(lassoMod$beta),function(x) sum(lassoMod$beta[,x]!=0)),type="line",col="blue")
+idx=c(1,8,10,25,64,81)
+idx
+abline(v=log(lassoMod$lambda[idx]))
+lassoMod_steps <- glmnet(lambda = lassoMod$lambda[idx],x = x, y = y, alpha = 1, family = "binomial")
+lassoMod_steps_deviance=(1-lassoMod_steps$dev.ratio)*lassoMod$nulldev
+lassoMod_steps_deviance
+c(7:0)
+plot(ylab = "deviance",xlab="number of predictors",x=c(0:5),y=lassoMod_steps_deviance,type="line")
+########################## 
 plot(lassoMod,label = TRUE, xvar = "lambda")
 plot(y=lassoMod$dev.ratio,x=log(lassoMod$lambda))
 

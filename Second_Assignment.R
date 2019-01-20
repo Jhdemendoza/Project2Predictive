@@ -361,18 +361,63 @@ pairs(admision[,c(3,6,7)])
 
 y<-admision$Chance>0.9
 x<-model.matrix(Chance>0.9~.,data=admision)[,-c(1)]
+x=apply(X = x,MARGIN = 2,FUN = scale)
 
-ridgeMod <- glmnet(x = x, y = y, alpha = 0, family = "binomial")
-max_deviance_ridge=ridgeMod$nulldev*(1-ridgeMod$dev.ratio)
 
-plot(max_deviance_ridge)
+steps=seq(from=0,to = .3,by = 0.01)
+accuracy=rep(0,length(steps))
+tnr=rep(0,length(steps))
+tpr=rep(0,length(steps))
+j=1
+for (i in steps){
+  ridgeMod <- glmnet(lambda = i,x = x, y = y, alpha = 0, family = "binomial")
+  val_pre=logistic(x=predict(ridgeMod,newx = x))
+  tab <- table(Chance>cutoff,val_pre>0.5)
+  print(tab)
+  accuracy[j]<- sum(diag(tab)) / sum(tab)
+  tnr[j] <- tab[1]/sum(tab[,1])
+  tpr[j] <- tab[4]/sum(tab[,2])
+  print(paste("Accuracy:",accuracy[j]))
+  print(paste("True positive rate:",tpr[j]))
+  print(paste("True negative rate:",tnr[j]))
+  j=j+1
+}
+
+plot(accuracy,x=steps,xlab = "lambda",type="line",ylim = c(0.7,1),xlim = c(0,.3))
+points(y=tpr,x=steps,type="line",col="blue")
+points(y=tnr,x=steps,type="line",col="red")
+
+
+{
+ridgeMod <- glmnet(lambda = 0,x = x, y = y, alpha = 0, family = "binomial")
+#coef(ridgeMod,s=10)
+val_pre=logistic(x=predict(ridgeMod,newx = x))
+#plot(val_pre)
+summary(val_pre>0.5)
+summary(Chance>0.9)
+
+tab <- table(Chance>cutoff,val_pre>0.5)
+print(tab)
+accuracy <- sum(diag(tab)) / sum(tab)
+tnr <- tab[1]/sum(tab[,1])
+tpr <- tab[4]/sum(tab[,2])
+print(paste("Accuracy:",accuracy))
+print(paste("True positive rate:",tpr))
+print(paste("True negative rate:",tnr))
+}
+
+
+
+deviance_ridge=ridgeMod$nulldev*(1-ridgeMod$dev.ratio)
+deviance_ridge
+
+plot(deviance_ridge)
 plot(ridgeMod$lambda)
-ridgeMod$beta
-deviance=ridgeMod$nulldev*ridgeMod$dev.ratio
-plot(deviance)
-max(deviance)
-plot(ridgeMod$dev.ratio)
-plot(ridgeMod$lambda)
+plot(ridgeMod$beta)
+
+class(ridgeMod$beta)
+predict(ridgeMod,exact = F,newx = 1:200)
+
 #Deviance obtained from this model is 83, which is lower than in the case 
 #of using BIC to reduce the estimators.
 #So here is clear that using less predictors (after stepAIC)

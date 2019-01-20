@@ -363,29 +363,43 @@ y<-admision$Chance>0.9
 x<-model.matrix(Chance>0.9~.,data=admision)[,-c(1)]
 x=apply(X = x,MARGIN = 2,FUN = scale)
 
-
+{
 steps=seq(from=0,to = .3,by = 0.01)
 accuracy=rep(0,length(steps))
 tnr=rep(0,length(steps))
 tpr=rep(0,length(steps))
+fpr=rep(0,length(steps))
+deviance=rep(0,length(steps))
+r_squared=rep(0,length(steps))
 j=1
+}
+
 for (i in steps){
   ridgeMod <- glmnet(lambda = i,x = x, y = y, alpha = 0, family = "binomial")
+  deviance[j]=(1-ridgeMod$dev.ratio)*ridgeMod$nulldev
+  r_squared[j]=ridgeMod$dev.ratio
   val_pre=logistic(x=predict(ridgeMod,newx = x))
   tab <- table(Chance>cutoff,val_pre>0.5)
   print(tab)
   accuracy[j]<- sum(diag(tab)) / sum(tab)
   tnr[j] <- tab[1]/sum(tab[,1])
-  tpr[j] <- tab[4]/sum(tab[,2])
+  tpr[j] <- tab[4]/sum(tab[2,])
+  fpr[j] <- tab[2]/sum(tab[1,])
   print(paste("Accuracy:",accuracy[j]))
   print(paste("True positive rate:",tpr[j]))
   print(paste("True negative rate:",tnr[j]))
+  print(paste("False positive rate:",fpr[j]))
   j=j+1
 }
-
-plot(accuracy,x=steps,xlab = "lambda",type="line",ylim = c(0.7,1),xlim = c(0,.3))
-points(y=tpr,x=steps,type="line",col="blue")
-points(y=tnr,x=steps,type="line",col="red")
+{
+dev.off()
+par(mfrow=c(1,4))
+plot(r_squared,x=steps,type="line",main="R Squared")
+plot(main="Deviance Analysis",x=steps,y=deviance,xlab = "Lambda",ylab = "Deviance",type="line")
+plot(main="Accuracy of the predictions",accuracy,x=steps,xlab = "lambda",type="line",ylim = c(0.7,1),xlim = c(0,.3))
+#points(y=tnr,x=steps,type="line",col="red")
+plot(main="ROC Curve",y=tpr,x=fpr,xlim = c(0,0.15),ylim = c(0,1),type="line")
+}
 
 
 {
@@ -405,18 +419,6 @@ print(paste("Accuracy:",accuracy))
 print(paste("True positive rate:",tpr))
 print(paste("True negative rate:",tnr))
 }
-
-
-
-deviance_ridge=ridgeMod$nulldev*(1-ridgeMod$dev.ratio)
-deviance_ridge
-
-plot(deviance_ridge)
-plot(ridgeMod$lambda)
-plot(ridgeMod$beta)
-
-class(ridgeMod$beta)
-predict(ridgeMod,exact = F,newx = 1:200)
 
 #Deviance obtained from this model is 83, which is lower than in the case 
 #of using BIC to reduce the estimators.

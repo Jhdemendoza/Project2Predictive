@@ -363,17 +363,19 @@ y<-admision$Chance>0.9
 x<-model.matrix(Chance>0.9~.,data=admision)[,-c(1)]
 x=apply(X = x,MARGIN = 2,FUN = scale)
 
+#Initializing some arrays
 {
-steps=seq(from=0,to = .3,by = 0.01)
-accuracy=rep(0,length(steps))
-tnr=rep(0,length(steps))
-tpr=rep(0,length(steps))
-fpr=rep(0,length(steps))
-deviance=rep(0,length(steps))
-r_squared=rep(0,length(steps))
-j=1
+  steps=seq(from=0,to = .3,by = 0.01)
+  accuracy=rep(0,length(steps))
+  tnr=rep(0,length(steps))
+  tpr=rep(0,length(steps))
+  fpr=rep(0,length(steps))
+  deviance=rep(0,length(steps))
+  r_squared=rep(0,length(steps))
+  j=1
 }
-
+#Iterating over lambda - 
+#Lambda > 0.3 evaluates everything as negative
 for (i in steps){
   ridgeMod <- glmnet(lambda = i,x = x, y = y, alpha = 0, family = "binomial")
   deviance[j]=(1-ridgeMod$dev.ratio)*ridgeMod$nulldev
@@ -391,6 +393,7 @@ for (i in steps){
   print(paste("False positive rate:",fpr[j]))
   j=j+1
 }
+#Here we make some plots to explain the model
 {
 dev.off()
 par(mfrow=c(1,4))
@@ -399,35 +402,35 @@ plot(main="Deviance Analysis",x=steps,y=deviance,xlab = "Lambda",ylab = "Devianc
 plot(main="Accuracy of the predictions",accuracy,x=steps,xlab = "lambda",type="line",ylim = c(0.7,1),xlim = c(0,.3))
 #points(y=tnr,x=steps,type="line",col="red")
 plot(main="ROC Curve",y=tpr,x=fpr,xlim = c(0,0.15),ylim = c(0,1),type="line")
+dev.off()
 }
-
+#Main conclusions that can be obtained from here:
+##Lambda penalizes the results of the model. Best results
+###are obtained if Lambda=0!
+##In that case, R squared is 0.84
+##Deviance absolute result is 45.42
+##Accuracy is 0.975
+## tpr = 0.89 while fpr=.01
 
 {
-ridgeMod <- glmnet(lambda = 0,x = x, y = y, alpha = 0, family = "binomial")
-#coef(ridgeMod,s=10)
-val_pre=logistic(x=predict(ridgeMod,newx = x))
-#plot(val_pre)
-summary(val_pre>0.5)
-summary(Chance>0.9)
-
-tab <- table(Chance>cutoff,val_pre>0.5)
-print(tab)
-accuracy <- sum(diag(tab)) / sum(tab)
-tnr <- tab[1]/sum(tab[,1])
-tpr <- tab[4]/sum(tab[,2])
-print(paste("Accuracy:",accuracy))
-print(paste("True positive rate:",tpr))
-print(paste("True negative rate:",tnr))
+fpr[1]
+tpr[1]
+r_squared[1]
+accuracy[1]
+deviance[1]
 }
 
-#Deviance obtained from this model is 83, which is lower than in the case 
-#of using BIC to reduce the estimators.
-#So here is clear that using less predictors (after stepAIC)
-#improves our model!!
-plot(x=log(ridgeMod$lambda),y=ridgeMod$dev.ratio)
-#About the R^2 for the model, as we increase the Lamba, it decreases to 0. 
-#Best R^2 is achieved if lambda~0
-  
+ridgeMod <- glmnet(x = x, y = y, alpha = 0, family = "binomial")
+plot(ridgeMod, label = TRUE, xvar = "lambda")
+abline(v=log(0.3))
+#From this plot we can see that model with
+#lambdas closer to 0.3 performs almost 
+#(recall that variables are normalize)
+#if every variable has the same significance
+
+#LASSO ESTA TARDE :)
+
+
 lassoMod <- glmnet(x = x, y = y, alpha = 1, family = "binomial")
 deviance_lasso=lassoMod$nulldev*(1-lassoMod$dev.ratio)
 plot(deviance_lasso)

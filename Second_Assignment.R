@@ -25,7 +25,9 @@ names(admision)
 names(admision)=c("GRE","TOEFL","UniRating","SOP","LOR","CGPA","Research","Chance")
 attach(admision)
 
-
+dim(admision)
+sapply(admision,class)
+my_cols=c("red","blue")
 
 ############################EXPLORATORY ANALYSIS#####################
 pairs.panels(admision, 
@@ -35,8 +37,8 @@ pairs.panels(admision,
              lm = FALSE,
              ellipses = FALSE,
              smooth = FALSE,
-             #pch = c(21,21)[class],
-             #bg=my_cols[class],
+             pch = c(21,21),
+             bg=my_cols[as.factor(Chance>0.9)],
              rug = FALSE,
              cex.cor = 5,
              scale = TRUE,
@@ -45,13 +47,28 @@ pairs.panels(admision,
 # All variables but Research follow a Gaussian distribution
 # The most correlated variables against Chance (which is the target variable) are GRE
 # and CGPA which could be understood as equivalent to the PAU in Spain
+names(admision)
+
+{
+var=Chance
+name="Chance"
+summary(var)
+boxplot(var)
+text(x=1.3,y=boxplot(var)$stats,labels = boxplot(var)$stats)
+text(x=0.65,y=mean(var),labels = paste("Mean:",round(mean(var),1)))
+plot(density(var),main="",xlab = name)
+abline(v=mean(var))
+}
 
 # The parameters included are : 
 ## 1. GRE Scores (out of 340) GRE Quantitative variable
 summary(GRE)
 boxplot(GRE)
+text(x=1.3,y=boxplot(GRE)$stats,labels = boxplot(GRE)$stats)
+text(x=0.65,y=mean(GRE),labels = paste("Mean:",round(mean(GRE),1)))
 plot(ecdf(GRE))
-plot(density(GRE))
+plot(density(GRE),main="",xlab = "GRE")
+abline(v=mean(GRE))
 ## No outliers for GRE and as seen in the first plot it follows a Normal distribution
 
 ## 2. TOEFL Scores (out of 120) TOEFL Quantitative variable
@@ -114,6 +131,7 @@ plot(density(Chance))
 ## make it a binary one by using a cutoff.
 attach(admision)
 
+summary(Research)
 
 ################################LINEAR REGRESSION#########################
 Anova(lm(Chance~.,data = admision))

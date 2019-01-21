@@ -175,6 +175,15 @@ summary(Chance > cutoff)
 diff_model<-function(response,predictor,name="",data=admision,gr=FALSE){
   predictor_scaled=scale(predictor)
   mod <- glm(response>cutoff~predictor_scaled,family = "binomial",data=admision)
+  tab <- table(Chance>cutoff,mod$fitted.values>0.5)
+  print(tab)
+  accuracy <- sum(diag(tab)) / sum(tab)
+  tnr <- tab[1]/sum(tab[,1])
+  tpr <- tab[4]/sum(tab[,2])
+  print(name)
+  print(paste("Accuracy:",accuracy))
+  print(paste("True positive rate:",tpr))
+  print(paste("True negative rate:",tnr))
   if (gr == TRUE) {
     x_plot <- seq(-3,3,by=0.1)
     temp <- mod$coefficients[1]+mod$coefficients[2]*x_plot
@@ -185,17 +194,12 @@ diff_model<-function(response,predictor,name="",data=admision,gr=FALSE){
     y_d <- 0.5
     points(x_d,y_d,pch=19,col="blue")
     text(x_d,y_d,labels = round(x_d,2),pos=4)
+    text(x=(-1.3*sd(predictor)+mean(predictor)),y=0.8,labels = paste("Accuracy:",round(accuracy,2)),pos=4)
+    text(x=(-1.3*sd(predictor)+mean(predictor)),y=0.6,labels = paste("TPR:",round(tpr,2)),pos=4)
+    text(x=(-1.3*sd(predictor)+mean(predictor)),y=0.4,labels = paste("TNR:",round(tnr,2)),pos=4)
   }
-  tab <- table(Chance>cutoff,mod$fitted.values>0.5)
-  print(tab)
-  accuracy <- sum(diag(tab)) / sum(tab)
-  tnr <- tab[1]/sum(tab[,1])
-  tpr <- tab[4]/sum(tab[,2])
-  print(name)
-  print(paste("Accuracy:",accuracy))
-  print(paste("True positive rate:",tpr))
-  print(paste("True negative rate:",tnr))
 }
+exp(coef(x))
 
 diff_model(Chance,GRE,"GRE", gr=TRUE)
 diff_model(Chance,TOEFL,"TOEFL", gr=TRUE)

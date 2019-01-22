@@ -38,7 +38,7 @@ pairs.panels(admision,
              ellipses = FALSE,
              smooth = FALSE,
              pch = c(21,21),
-             bg=my_cols[as.factor(Chance>0.9)],
+             bg=my_cols[as.factor(Chance>=cutoff)],
              rug = FALSE,
              cex.cor = 5,
              scale = TRUE,
@@ -48,6 +48,8 @@ pairs.panels(admision,
 # The most correlated variables against Chance (which is the target variable) are GRE
 # and CGPA which could be understood as equivalent to the PAU in Spain
 names(admision)
+
+
 
 {
 var=Chance
@@ -161,21 +163,21 @@ summary(model)
 
 #############################LOGISTIC REGRESSION###########################
 ## For the reasons given before we will be building some classification models, where
-## the class will be given by Chance>0.9, i.e. having more than 90% probability of
+## the class will be given by Chance>=0.9, i.e. having more than 90% probability of
 ## being accepted.
 plot(density(Chance))
 abline(v=0.9)
 
 cutoff=0.9
-summary(Chance > cutoff)
+summary(Chance >= cutoff)
 ## As we can see this cutoff makes two partitions, one of them contains 12,25% of the data points
 ## and the other one the rest.
 
 #### Let's start by looking at Chance vs. each one of the variables
 diff_model<-function(response,predictor,name="",data=admision,gr=FALSE){
   predictor_scaled=scale(predictor)
-  mod <- glm(response>cutoff~predictor_scaled,family = "binomial",data=admision)
-  tab <- table(Chance>cutoff,mod$fitted.values>0.5)
+  mod <- glm(response>=cutoff~predictor_scaled,family = "binomial",data=admision)
+  tab <- table(Chance>=cutoff,mod$fitted.values>0.5)
   print(tab)
   accuracy <- sum(diag(tab)) / sum(tab)
   tnr <- tab[1]/sum(tab[,1])
@@ -184,22 +186,23 @@ diff_model<-function(response,predictor,name="",data=admision,gr=FALSE){
   print(paste("Accuracy:",accuracy))
   print(paste("True positive rate:",tpr))
   print(paste("True negative rate:",tnr))
+  R2=(1-mod$deviance/mod$null.deviance)
   if (gr == TRUE) {
     x_plot <- seq(-3,3,by=0.1)
     temp <- mod$coefficients[1]+mod$coefficients[2]*x_plot
     x_plot <- x_plot*sd(predictor)+mean(predictor)
     plot(x=x_plot,y=logistic(temp),type = "line",xlab=name,ylab = "Probability")
-    points(x=predictor,y=response>cutoff)
+    points(x=predictor,y=response>=cutoff)
     x_d <- (-mod$coefficients[1]/mod$coefficients[2])*sd(predictor)+mean(predictor)
     y_d <- 0.5
     points(x_d,y_d,pch=19,col="blue")
     text(x_d,y_d,labels = round(x_d,2),pos=4)
     text(x=(-1.3*sd(predictor)+mean(predictor)),y=0.8,labels = paste("Accuracy:",round(accuracy,2)),pos=4)
-    text(x=(-1.3*sd(predictor)+mean(predictor)),y=0.6,labels = paste("TPR:",round(tpr,2)),pos=4)
-    text(x=(-1.3*sd(predictor)+mean(predictor)),y=0.4,labels = paste("TNR:",round(tnr,2)),pos=4)
+    text(x=(-1.3*sd(predictor)+mean(predictor)),y=0.65,labels = paste("TPR:",round(tpr,2)),pos=4)
+    text(x=(-1.3*sd(predictor)+mean(predictor)),y=0.50,labels = paste("TNR:",round(tnr,2)),pos=4)
+    text(x=(-1.3*sd(predictor)+mean(predictor)),y=0.35,labels = paste("R^2:",round(R2,2)),pos=4)
   }
 }
-exp(coef(x))
 
 diff_model(Chance,GRE,"GRE", gr=TRUE)
 diff_model(Chance,TOEFL,"TOEFL", gr=TRUE)
@@ -225,9 +228,11 @@ for (i in 1:(length(indexes))) {
 
 
 ###################################BEST MODEL ACCORDING TO BIC######################################
-mod <- stepAIC(glm(Chance > cutoff ~ ., data = admision, family = "binomial"), k = log(length(Chance)))
+mod <- stepAIC(glm(Chance >= cutoff ~ ., data = admision, family = "binomial"), k = log(length(Chance)))
 summary(mod)
-pairs.panels(admision[,c(3,6,7,8)], 
+Anova(mod)
+names(admision)
+pairs.panels(admision[,c(2,6,7)], 
              method = "pearson", # correlation method
              hist.col = "#00146E",
              col = "red",
@@ -239,7 +244,7 @@ pairs.panels(admision[,c(3,6,7,8)],
              scale = TRUE,
              density = TRUE  # show density plots
 )
-tab <- table(Chance>cutoff,mod$fitted.values>0.5)
+tab <- table(Chance>=cutoff,mod$fitted.values>0.5)
 print(tab)
 accuracy <- sum(diag(tab)) / sum(tab)
 tnr <- tab[1]/sum(tab[,1])
@@ -251,7 +256,7 @@ print(paste("True negative rate:",tnr))
 ### and if it hasn't with the predict
 
 ## Allowing for interactions returns the same result -> The important predictors are GRE, LOR and CGPA
-mod_int <- stepAIC(glm(Chance > cutoff ~ .^2, data=admision, family="binomial"), k = log(length(Chance)))
+mod_int <- stepAIC(glm(Chance >= cutoff ~ .^2, data=admision, family="binomial"), k = log(length(Chance)))
 summary(mod_int)
 ## The interactions model just returns the same as the model that doesn't allow for interactions
 
@@ -339,7 +344,8 @@ plot(density(mod$residuals[mod$residuals>-10]+1))
 
 
 #Checking Independece 
-plot(mod$residuals[mod$residuals>-10],type = "line")
+plot(mod$residuals,type = "line",ylab = "residuals")
+points(x=(1:length(Chance))[0.85<=Chance & Chance<=0.95],y=mod$residuals[0.85<=Chance & Chance<=0.95],col="red")
 Chance[abs(mod$residuals)>1.2]
 #Independe can be assure. Apparently, there exist a kind of memmory
 #from one point to the following. This is not a problem in this case, 
@@ -381,8 +387,8 @@ pairs(admision[,c(3,6,7)])
 #quitado predictors (simplifico el modelo) pero aún así
 #tenemos un buen resultado en deviance!
 
-y<-admision$Chance>0.9
-x<-model.matrix(Chance>0.9~.,data=admision)[,-c(1)]
+y<-admision$Chance>=cutoff
+x<-model.matrix(Chance>=cutoff~.,data=admision)[,-c(1)]
 x=apply(X = x,MARGIN = 2,FUN = scale)
 
 #Initializing some arrays
@@ -403,7 +409,7 @@ for (i in steps){
   deviance[j]=(1-ridgeMod$dev.ratio)*ridgeMod$nulldev
   r_squared[j]=ridgeMod$dev.ratio
   val_pre=logistic(x=predict(ridgeMod,newx = x))
-  tab <- table(Chance>cutoff,val_pre>0.5)
+  tab <- table(Chance>=cutoff,val_pre>0.5)
   print(tab)
   accuracy[j]<- sum(diag(tab)) / sum(tab)
   tnr[j] <- tab[1]/sum(tab[,1])
@@ -473,7 +479,7 @@ for (i in steps){
   deviance[j]=(1-lassoMod$dev.ratio)*lassoMod$nulldev
   r_squared[j]=lassoMod$dev.ratio
   val_pre=logistic(x=predict(lassoMod,newx = x))
-  tab <- table(Chance>cutoff,val_pre>0.5)
+  tab <- table(Chance>=cutoff,val_pre>0.5)
   print(tab)
   accuracy[j]<- sum(diag(tab)) / sum(tab)
   tnr[j] <- tab[1]/sum(tab[,1])
@@ -535,17 +541,17 @@ predict(ncvRidge, type = "coefficients", s = ncvRidge$lambda.1se)
 
 diff_model<-function(response,predictor,name="",data=admision){
   predictor_scaled=scale(predictor)
-  mod=glm(response>cutoff~predictor_scaled,family = "binomial",data=admision)
+  mod=glm(response>=cutoff~predictor_scaled,family = "binomial",data=admision)
   x_plot=seq(-3,3,by=0.1)
   temp=mod$coefficients[1]+mod$coefficients[2]*x_plot
   x_plot=x_plot*sd(predictor)+mean(predictor)
   plot(x=x_plot,y=logistic(temp),type = "line",xlab=name,ylab = "Probability")
-  points(x=predictor,y=response>cutoff)
+  points(x=predictor,y=response>=cutoff)
   x_d=(-mod$coefficients[1]/mod$coefficients[2])*sd(predictor)+mean(predictor)
   y_d=0.5
   points(x_d,y_d,pch=19,col="blue")
   text(x_d,y_d,labels = round(x_d,2),pos=4)
-  tab=table(Chance>cutoff,mod$fitted.values>0.5)
+  tab=table(Chance>=cutoff,mod$fitted.values>0.5)
   print(tab)
   accuracy <- sum(diag(tab)) / sum(tab)
   print(paste("Accuracy:",accuracy))
@@ -561,25 +567,25 @@ diff_model(Chance,CGPA,"CGPA")
 
 ###################Para hacer pruebas#####################
 predictor_scaled=scale(GRE)
-mod=glm(Chance>cutoff~predictor_scaled,family = "binomial",data=admision)
+mod=glm(Chance>=cutoff~predictor_scaled,family = "binomial",data=admision)
 summary(mod$fitted.values>0.5)
 x_plot=seq(-3,3,by=0.1)
 temp=mod$coefficients[1]+mod$coefficients[2]*x_plot
 x_plot=x_plot*sd(GRE)+mean(GRE)
 plot(x=x_plot,y=logistic(temp),type = "line")
-points(x=GRE,y=Chance>cutoff)
+points(x=GRE,y=Chance>=cutoff)
 x_d=(-mod$coefficients[1]/mod$coefficients[2])*sd(GRE)+mean(GRE)
 y_d=0.5
 points(x_d,y_d,pch=19,col="blue")
 text(x_d,y_d,labels = round(x_d,2),pos=4)
-tab=table(Chance>cutoff,mod$fitted.values>0.5)
+tab=table(Chance>=cutoff,mod$fitted.values>0.5)
 print(tab)
 
 
 
 
-mod_1=glm(Chance>cutoff~GRE,family = "binomial",data=admision)
-mod_2=glm(Chance>cutoff~GRE_norm,family = "binomial",data=admision)
+mod_1=glm(Chance>=cutoff~GRE,family = "binomial",data=admision)
+mod_2=glm(Chance>=cutoff~GRE_norm,family = "binomial",data=admision)
 logistic(predict(mod_1,admision[2,]))
 logistic(predict(mod_2,admision_norm[2,]))
 
@@ -598,8 +604,68 @@ Anova(lm(Chance~.,data = admision))
 plot(ecdf(Chance))
 plot(density(Chance))
 
+#########################Lasso Checking Important Predictors##################
+y<-admision$Chance>=cutoff
+x<-model.matrix(Chance>=cutoff~.,data=admision)[,-c(1)]
+x=apply(X = x,MARGIN = 2,FUN = scale)
+
+lassoMod <- glmnet(x = x, y = y, alpha = 1, family = "binomial")
+plot(lassoMod, label = TRUE, xvar = "lambda")
+set.seed(12345)
+kcvLasso <- cv.glmnet(x = x, y = y, alpha = 1, nfolds = 10, family = "binomial")
+plot(kcvLasso)
+
+predict(ncvLasso, type = "coefficients", s = ncvLasso$lambda.1se)
+
+summary(Research[Chance<0.9])
+summary(Research[Chance>=0.9])
+
+mod <- stepAIC(glm(Chance >= cutoff ~., data = admision, family = "binomial"), k = log(length(Chance)))
+
+names(admision)
+research=c(0,1)
+
+cgpa=seq(9,10,by=0.1)
+cgpa_sort=sort(rep(cgpa,times=length(85:120)))
+toefl=rep(85:120,length(cgpa))
+toefl
+cgpa_sort
+data.frame(toefl,cgpa)
+
+val_TOEFL=predict(mod, data.frame(TOEFL=toefl,CGPA=cgpa_sort,Research=as.factor(1)),type="response")
+cols=c("red","blue")
+plot(toefl,cgpa_sort,col=cols[(val_TOEFL>0.5)+1],pch=19,ylab = "CGPA",xlab = "TOEFL")
+
+val_CGPA=predict(mod, data.frame(TOEFL=seq(100,120,by = 1),CGPA=9.5,Research=as.factor(1)),type="response")
+
+plot(toefl,cgpa_sort,pch=19,col=cols,ylab = "CGPA",xlab = "TOEFL")
+col_cata=c("red","yellow")
+mod(toefl,2)
+
+cor(TOEFL,Research)
+chisq.test(x=TOEFL,y=Research)
+CGPA
+
+plot(x = TOEFL,y=CGPA,col=cols[as.numeric(Research)])
+
+plot(density(TOEFL[Chance>=0.9]),xlim=c(85,125),xlab = "TOEFL",main="")
+lines(density(TOEFL[Research==0]),col="red")
+lines(density(TOEFL[Research==1]),col="blue")
+
+plot(density(CGPA[Chance>=0.9]),xlim=c(7,10),xlab = "CGPA",main="")
+lines(density(CGPA[Research==0]),col="red")
+lines(density(CGPA[Research==1]),col="blue")
+
+plot(x = CGPA,y=TOEFL,col=cols[as.numeric(Research)],pch=19)
+points(x=CGPA[Chance>=0.9],y=TOEFL[Chance>=0.9],pch=20)
 
 
+difference=val[0]-val[1]
+difference
+model_TOEFL_CGPA<-admision[,c(2,6,8)]
+mod_TOEFL_CGPA <- glm(Chance >= cutoff ~., data = model_TOEFL_CGPA, family = "binomial")
+
+mod$coefficients
 
 #######################################################################################
 ########### I wouldn't normalize/standardize the data as it does not make a difference
@@ -628,3 +694,17 @@ plot(density(Chance))
 #mod_norm <- stepAIC(glm(Chance_norm > cutoff_norm ~ ., data = admision_norm, family = "binomial"), k = log(length(Chance)))
 ## GRE_norm + LOR_norm + CGPA_norm
 #stepAIC(glm(Chance > cutoff ~ ., data = admision_norm, family = "binomial"), k = log(length(Chance)))
+
+
+
+admision_gre_changed=admision
+admision_gre_changed$GRE=-admision$GRE
+admision_gre_changed
+
+y<-admision$Chance>=cutoff
+x<-model.matrix(Chance>=cutoff~.,data=admision_gre_changed)[,-c(1)]
+x=apply(X = x,MARGIN = 2,FUN = scale)
+
+mod_gre <- glmnet(x = x, y = y, alpha = 0, family = "binomial")
+mod_gre$beta[,20]
+plot(mod_gre,label = TRUE, xvar = "lambda")
